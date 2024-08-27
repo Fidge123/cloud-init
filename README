@@ -1,0 +1,6 @@
+# Cloud Config
+
+This contains the default configuration
+
+- `/var/log/cloud-init.log`: The actual process logs for cloud-init’s processing of the configuration files.
+- `/var/log/cloud-init-output.log`: Any output produced by the processing of the configuration can be found here.

@@ -1,0 +1,70 @@
+#cloud-config
+timezone: Europe/Berlin
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+
+groups:
+  - docker
+
+users:
+  - name: flori
+    groups: users, admin, docker
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDfoXdKei94tFGVToXhJiXGxtZB4m/iok3Xaukl/rtN+JrI4W+oijOGPD3Ol+J/130zO8rXbPizDod3lTg6z11rMnvkty/bjNGHX09gq37ThfGOl6wYLZbrCaOBApbNJR5iVZcYLKIRIHSKgloV7l9sWN9VJDa5pVQbVpBxY5bebk6ST9i8T5UAbg5KePcw49UauYJcpkZK4hqPwfEdD1QRo/LOHM3yb2s42AYmBIbn+Ij2d8ibBFSV/aNmZ4nFaX2Tnj2upvng6lPaeV529u8L44WTbCunKHTEbx/xP/aF3ROCwFHRHokq2x+DiWyM8lTqPfmOxbZV0bO0FDh5XVwt flori@macmini
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDRGUWboUyVVZEnMjdWmBaETbpcEfmwuGg+Ds4uyT81GKyLOwJddSirxWPF86000I0JjCI1GV/DDMbV+DaC8WLV+UDiFH2c6B6XNtq9yLOm8R/L6vPOrgmuMPQBj6oNTisD74Jk6Yl0ChRsudP4S+5V55956+TOTbD25gbyETvPueNkLACZb5dc5e7axdUG5vIL4f20pAq7DJLH82AZxXOrLEG9g5vGHl8GVYX97e2UovJljQtGFMQ122ql7kcEWVpkCt2pH2hPoHTXrAVGbuOhUKF8WSLO/kw9GD3Xl1VTaM9558SM/XBlKEbJKetmBmC8I76wPAXHfvQ3uJRQDpRd mobile@iPad-Pro
+
+bootcmd:
+  # Prepare Docker
+  - apt-get install ca-certificates curl
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - apt-get update
+
+packages:
+  - ufw
+  - git
+  - direnv
+  - logrotate
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+write_files:
+  - path: /etc/docker/daemon.json
+    defer: true
+    content: |
+      {
+        "log-driver": "local",
+        "log-opts": {
+          "max-size": "10m"
+        }
+      }
+  - path: ~/.bashrc
+    append: true
+    content: |
+      eval "$(direnv hook bash)"
+
+runcmd:
+  # Configure SSH
+  - sed -i -e '/^\(#\|\)Port/s/^.*$/Port 4444/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)PasswordAuthentication/s/^.*$/PasswordAuthentication no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)KbdInteractiveAuthentication/s/^.*$/KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)ChallengeResponseAuthentication/s/^.*$/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
+  - sed -i -e '$aAllowUsers flori' /etc/ssh/sshd_config
+  - ufw allow 4444/tcp
+  - ufw enable
+  - systemctl restart ssh.service
+  # Activate Docker
+  - systemctl enable docker.service
+  - systemctl enable containerd.service
+  # Reboot
+  - reboot

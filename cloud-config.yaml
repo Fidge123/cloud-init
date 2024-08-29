@@ -84,6 +84,7 @@ runcmd:
   - sed -i -e '/^\(#\|\)PrintLastLog/s/^.*$/PrintLastLog no/' /etc/ssh/sshd_config
   - sed -i -e '$aAllowUsers flori' /etc/ssh/sshd_config
   - ufw allow 4444/tcp
+  - ufw allow 5432/tcp
   - ufw enable
   # Configure fail2ban & unattended-upgrades
   - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local

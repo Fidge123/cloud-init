@@ -1,5 +1,5 @@
 services:
-  nginxproxymanager:
+  npm:
     image: jc21/nginx-proxy-manager:latest
     restart: unless-stopped
     ports:
@@ -22,9 +22,9 @@ services:
     # ports:
     #   - 3000:3000
     env_file:
-      - rallly.env
+      - secrets/rallly.env
 
-  invidious:
+  yt:
     image: quay.io/invidious/invidious:latest
     restart: unless-stopped
     ports:
@@ -43,7 +43,7 @@ services:
         max-size: "100M"
         max-file: "4"
 
-  stirling-pdf:
+  pdf:
     image: frooodle/s-pdf:latest-ultra-lite
     restart: unless-stopped
     # ports:
@@ -52,7 +52,7 @@ services:
       - ./pdf/trainingData:/usr/share/tessdata
       - ./pdf/extraConfigs:/configs
     env_file:
-      - stirling.env
+      - secrets/stirling.env
 
   miniflux:
     image: miniflux/miniflux:latest
@@ -60,9 +60,9 @@ services:
     # ports:
     #   - "8080:8080"
     env_file:
-      - miniflux.env
+      - secrets/miniflux.env
 
-  it-tools:
+  tools:
     image: corentinth/it-tools:latest
     restart: unless-stopped
     # ports:
@@ -76,14 +76,14 @@ services:
     # ports:
     #   - "80:80"
     env_file:
-      - pgadmin.env
+      - secrets/pgadmin.env
 
   watchtower:
     image: containrrr/watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     env_file:
-      - watchtower.env
+      - secrets/watchtower.env
 
 networks:
   default:

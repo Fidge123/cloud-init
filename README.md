@@ -1,9 +1,30 @@
 # Cloud Config
 
 This contains the default configuration for my normal server.
-Using cloud-init and the install scripts, it should be fairly fast to spin up a new server.
+Using [cloud-init](https://cloudinit.readthedocs.io/en/latest/reference/modules.html) and the install scripts, it should be fairly fast to spin up a new server.
 
-TODO: Use hcloud to automate new server creation on hetzner.
+
+``` sh-session
+Create new server in Hetzner Cloud Console with cloud-init config.
+$ TODO: Use hcloud to automate new server creation on hetzner.
+
+# Connect via ssh
+$ ssh flori@IP-ADDRESS -p 4444
+
+# Get scripts and data
+$ git clone github.com/fidge123/cloud-init
+$ cd cloud-init
+
+# Decrypt secrets using key in password manager
+$ gpg -d secrets.tgz.gpg | tar xz
+
+# Run postgres script
+$ chmod +x secrets/install_postgres.sh
+$ ./secrets/install_postgres.sh
+
+# Run docker
+$ docker compose up -d
+```
 
 For debugging these logs are helpful:
 - `/var/log/cloud-init.log`: The actual process logs for cloud-init's processing of the configuration files.

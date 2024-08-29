@@ -18,19 +18,22 @@ users:
       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDRGUWboUyVVZEnMjdWmBaETbpcEfmwuGg+Ds4uyT81GKyLOwJddSirxWPF86000I0JjCI1GV/DDMbV+DaC8WLV+UDiFH2c6B6XNtq9yLOm8R/L6vPOrgmuMPQBj6oNTisD74Jk6Yl0ChRsudP4S+5V55956+TOTbD25gbyETvPueNkLACZb5dc5e7axdUG5vIL4f20pAq7DJLH82AZxXOrLEG9g5vGHl8GVYX97e2UovJljQtGFMQ122ql7kcEWVpkCt2pH2hPoHTXrAVGbuOhUKF8WSLO/kw9GD3Xl1VTaM9558SM/XBlKEbJKetmBmC8I76wPAXHfvQ3uJRQDpRd mobile@iPad-Pro
 
 bootcmd:
+  # Remove root pw
+  - sed -i 's/^root:.*$/root:*:16231:0:99999:7:::/' /etc/shadow
   # Prepare Docker
-  - apt-get install ca-certificates curl
   - install -m 0755 -d /etc/apt/keyrings
   - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
   - chmod a+r /etc/apt/keyrings/docker.asc
   - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  - apt-get update
 
 packages:
   - ufw
+  - python3-pip
   - git
   - direnv
   - logrotate
+  - fail2ban
+  - unattended-upgrades
   - docker-ce
   - docker-ce-cli
   - containerd.io
@@ -47,24 +50,48 @@ write_files:
           "max-size": "10m"
         }
       }
-  - path: ~/.bashrc
-    append: true
+  - path: /etc/logrotate.d/invidious.logrotate
     content: |
-      eval "$(direnv hook bash)"
+      /home/invidious/invidious/invidious.log {
+        rotate 4
+        weekly
+        notifempty
+        missingok
+        compress
+        minsize 1048576
+      }
+  - path: /etc/apt/apt.config.d/51my-unattended-upgrades
+    content: |
+      Unattended-Upgrade::Allowed-Origins {
+        "${distro_id}:${distro_codename}-updates";
+      }
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-WithUsers "false";
+      Unattended-Upgrade::Automatic-Reboot-Time "02:30";
 
 runcmd:
+  # Configure .bashrc
+  - cp /etc/skel/.bashrc /home/flori/
+  - sed -i -e '$aeval "$(direnv hook bash)"' /home/flori/.bashrc
+  - chown -R flori:flori /home/flori/.bashrc
   # Configure SSH
   - sed -i -e '/^\(#\|\)Port/s/^.*$/Port 4444/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)PasswordAuthentication/s/^.*$/PasswordAuthentication no/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)KbdInteractiveAuthentication/s/^.*$/KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)X11Forwarding/s/^.*$/X11Forwarding no/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)ChallengeResponseAuthentication/s/^.*$/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)PrintLastLog/s/^.*$/PrintLastLog no/' /etc/ssh/sshd_config
   - sed -i -e '$aAllowUsers flori' /etc/ssh/sshd_config
   - ufw allow 4444/tcp
   - ufw enable
-  - systemctl restart ssh.service
+  # Configure fail2ban & unattended-upgrades
+  - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+  - systemctl enable fail2ban
+  - systemctl enable unattended-upgrades.service
   # Activate Docker
   - systemctl enable docker.service
   - systemctl enable containerd.service
+  - docker network create net
   # Reboot
   - reboot

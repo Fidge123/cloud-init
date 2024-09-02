@@ -16,6 +16,29 @@ services:
       interval: 30s
       timeout: 3s
 
+  authelia:
+    image: authelia/authelia
+    restart: unless-stopped
+    volumes:
+      - ./authelia:/config
+    # expose:
+    #   - 9091
+    env_file:
+      - secrets/authelia.env
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    # ports:
+    #   - "3000:3000"
+    env_file:
+      - secrets/umami.env
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:3000/api/heartbeat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   rallly:
     image: lukevella/rallly:latest
     restart: unless-stopped
@@ -24,24 +47,34 @@ services:
     env_file:
       - secrets/rallly.env
 
-  yt:
-    image: quay.io/invidious/invidious:latest
+  metube:
+    image: ghcr.io/alexta69/metube
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:3000:3000"
-    volumes:
-      - ./invidious:/config
+    # ports:
+    #   - "8081:8081"
     environment:
-      - INVIDIOUS_CONFIG_FILE=config/invidious.yml
-    healthcheck:
-      test: wget -nv --tries=1 --spider http://127.0.0.1:3000/api/v1/trending || exit 1
-      interval: 30s
-      timeout: 5s
-      retries: 2
-    logging:
-      options:
-        max-size: "100M"
-        max-file: "4"
+      - DELETE_FILE_ON_TRASHCAN=true
+    volumes:
+      - /path/to/downloads:/downloads
+
+  # yt:
+  #   image: quay.io/invidious/invidious:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "127.0.0.1:3000:3000"
+  #   volumes:
+  #     - ./invidious:/config
+  #   environment:
+  #     - INVIDIOUS_CONFIG_FILE=config/invidious.yml
+  #   healthcheck:
+  #     test: wget -nv --tries=1 --spider http://127.0.0.1:3000/api/v1/trending || exit 1
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 2
+  #   logging:
+  #     options:
+  #       max-size: "100M"
+  #       max-file: "4"
 
   pdf:
     image: frooodle/s-pdf:latest-ultra-lite

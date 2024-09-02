@@ -28,10 +28,17 @@ bootcmd:
 
 packages:
   - ufw
+  - ntp
   - python3-pip
   - git
   - direnv
   - logrotate
+  - restic
+  - resticprofile
+  - aide
+  - aide-common
+  - logwatch
+  - msmtp
   - fail2ban
   - unattended-upgrades
   - docker-ce
@@ -68,12 +75,65 @@ write_files:
       Unattended-Upgrade::Automatic-Reboot "true";
       Unattended-Upgrade::Automatic-Reboot-WithUsers "false";
       Unattended-Upgrade::Automatic-Reboot-Time "02:30";
+  - path: /root/.msmtprc
+    permissions: 0400
+    content: |
+      # Set default values for all following accounts.
+      defaults
+      auth            on
+      tls             on
+      tls_certcheck   on
+      tls_force_sslv3 on
+      tls_min_dh_prime_bits 512
+      tls_trust_file  /etc/ssl/certs/ca-certificates.crt
+      logfile         /var/log/mail.log
+      syslog          on
+      add_missing_date_header on
+      protocol        smtp
+
+      # SMTP2GO
+      account        smtp2go
+      host           mail.smtp2go.com
+      port           465
+      tls_starttls   on
+      from           server@flori-richter.de
+      user           flori-richter.de
+      password       SMTP_PW
+
+      # Set a default account
+      account default: smtp2go
+  - path: /etc/fail2ban/filter.d/local-postgresql.conf
+    content: |
+      [Definition]
+      failregex = <HOST>\(\d+\) FATAL:  password authentication failed for .+$
+                  <HOST>\(\d+\) FATAL:  no pg_hba.conf entry for host .+$
+      ignoreregex = duration:
+  - path: /etc/fail2ban/jail.d/local-postgresql.conf
+    content: |
+      [local-postgresql]
+      enabled  = true
+      filter   = local-postgresql
+      action   = iptables[name=PostgreSQL, port=5432, protocol=tcp]
+      logpath  = /var/log/postgresql/postgresql*.log
+      maxretry = 3
 
 runcmd:
   # Configure .bashrc
   - cp /etc/skel/.bashrc /home/flori/
   - sed -i -e '$aeval "$(direnv hook bash)"' /home/flori/.bashrc
   - chown -R flori:flori /home/flori/.bashrc
+  # Configure email
+  - cp /root/.msmtprc /home/flori/.msmtprc
+  - chmod 0400 /home/flori/.msmtprc
+  - chown -R flori:flori /home/flori/.msmtprc
+  - ln -sf /usr/bin/msmtp /usr/bin/sendmail
+  - ln -sf /usr/bin/msmtp /usr/sbin/sendmail
+  # Configure AIDE (TODO configure)
+  - aideinit
+  # Configure NTP
+  - sed -i -r -e "s/^((server|pool).*)/# \1/" /etc/ntp.conf
+  - echo -e "\npool pool.ntp.org iburst" | tee -a /etc/ntp.conf
+  - service ntp restart
   # Configure SSH
   - sed -i -e '/^\(#\|\)Port/s/^.*$/Port 4444/' /etc/ssh/sshd_config
   - sed -i -e '/^\(#\|\)PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
@@ -86,7 +146,7 @@ runcmd:
   - ufw allow 4444/tcp
   - ufw allow 5432/tcp
   - ufw enable
-  # Configure fail2ban & unattended-upgrades
+  # Configure fail2ban & unattended-upgrades (TODO configure email)
   - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
   - systemctl enable fail2ban
   - systemctl enable unattended-upgrades.service

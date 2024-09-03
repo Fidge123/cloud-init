@@ -34,11 +34,9 @@ packages:
   - direnv
   - logrotate
   - restic
-  - resticprofile
-  - aide
-  - aide-common
   - logwatch
   - msmtp
+  - msmtp-mta
   - fail2ban
   - unattended-upgrades
   - docker-ce
@@ -76,7 +74,7 @@ write_files:
       Unattended-Upgrade::Automatic-Reboot-WithUsers "false";
       Unattended-Upgrade::Automatic-Reboot-Time "02:30";
   - path: /root/.msmtprc
-    permissions: 0400
+    permissions: "0400"
     content: |
       # Set default values for all following accounts.
       defaults
@@ -86,15 +84,13 @@ write_files:
       tls_force_sslv3 on
       tls_min_dh_prime_bits 512
       tls_trust_file  /etc/ssl/certs/ca-certificates.crt
-      logfile         /var/log/mail.log
-      syslog          on
       add_missing_date_header on
       protocol        smtp
 
       # SMTP2GO
       account        smtp2go
       host           mail.smtp2go.com
-      port           465
+      port           2525
       tls_starttls   on
       from           server@flori-richter.de
       user           flori-richter.de
@@ -116,6 +112,30 @@ write_files:
       action   = iptables[name=PostgreSQL, port=5432, protocol=tcp]
       logpath  = /var/log/postgresql/postgresql*.log
       maxretry = 3
+  - path: /etc/fail2ban/jail.local
+    content: |
+      [DEFAULT]
+      ignoreip = 127.0.0.0
+      bantime  = 21600s
+      findtime  = 120s
+      destemail = flori@hey.com
+      sender = admin@flori-richter.de
+      sendername = Fail2Ban
+      mta = sendmail
+      action = %(action_mwl)s
+
+      [sshd]
+      enabled = true
+      banaction = iptables-multiport
+      maxretry = 3
+  - path: /etc/logwatch/conf/logwatch.conf
+    content: |
+      TmpDir = /var/cache/logwatch
+      Output = mail
+      MailTo = flori@hey.com
+      MailFrom = logwatch@flori-richter.de
+      Detail = Low
+      Service = All
 
 runcmd:
   # Configure .bashrc
@@ -126,10 +146,6 @@ runcmd:
   - cp /root/.msmtprc /home/flori/.msmtprc
   - chmod 0400 /home/flori/.msmtprc
   - chown -R flori:flori /home/flori/.msmtprc
-  - ln -sf /usr/bin/msmtp /usr/bin/sendmail
-  - ln -sf /usr/bin/msmtp /usr/sbin/sendmail
-  # Configure AIDE (TODO configure)
-  - aideinit
   # Configure NTP
   - sed -i -r -e "s/^((server|pool).*)/# \1/" /etc/ntp.conf
   - echo -e "\npool pool.ntp.org iburst" | tee -a /etc/ntp.conf
@@ -146,11 +162,10 @@ runcmd:
   - ufw allow 4444/tcp
   - ufw allow 5432/tcp
   - ufw enable
-  # Configure fail2ban & unattended-upgrades (TODO configure email)
-  - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+  # Configure logwatch, fail2ban, unattended-upgrades & Docker
+  - mkdir /var/cache/logwatch
   - systemctl enable fail2ban
   - systemctl enable unattended-upgrades.service
-  # Activate Docker
   - systemctl enable docker.service
   - systemctl enable containerd.service
   - docker network create net

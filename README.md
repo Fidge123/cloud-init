@@ -11,19 +11,32 @@ $ TODO: Use hcloud to automate new server creation on hetzner.
 # Connect via ssh
 $ ssh flori@IP-ADDRESS -p 4444
 
+# Set mail PW (extra space is intentional)
+$  sudo sed -i -e 's/SMTP_PW/NEW_PW/g' /root/.msmtprc
+$  sudo sed -i -e 's/SMTP_PW/NEW_PW/g' /home/flori/.msmtprc
+
+# Create logwatch cache folder
+$ sudo mkdir /var/cache/logwatch
+
 # Get scripts and data
-$ git clone github.com/fidge123/cloud-init
+$ git clone https://github.com/Fidge123/cloud-init.git
 $ cd cloud-init
 
 # Decrypt secrets using key in password manager
 $ gpg -d secrets.tgz.gpg | tar xz
 
-# Run postgres script TODO pgbackrest
-$ chmod +x secrets/install_postgres.sh
-$ ./secrets/install_postgres.sh
+# Run postgres script (use install instead of restore if needed)
+$ chmod +x secrets/restore_postgres.sh
+$ ./secrets/restore_postgres.sh
+
+# Check pgbackrest
+$ sudo -u postgres pgbackrest --stanza=main --log-level-console=info check
 
 # Configure restic
-$ restic s3:https://f18a3fb8cd73bc711ef96ccc7864aa43.r2.cloudflarestorage.com/backup
+$ sudo su
+$ source secrets/restic.env 
+$ restic init
+$ restic restore latest
 
 # Run docker
 $ docker compose up -d
@@ -53,7 +66,6 @@ Decrypt: `gpg -d secrets.tgz.gpg | tar xz`
 - [Nginx Proxy Manager](https://nginxproxymanager.com): Expose your services easily and securely (Port 81)
   - https://npm.flori-richter.de
   - Default credentials: admin@example.com / changeme
-  - TODO: Copy config so it works on first start
 - [Stirling PDF](https://github.com/Stirling-Tools/Stirling-PDF): Perform various operations on PDF files (Port 8080)
   - https://pdf.flori-richter.de
   - It is necessary to set `client_max_body_size 100M;` so large PDFs are also handled
@@ -65,41 +77,27 @@ Decrypt: `gpg -d secrets.tgz.gpg | tar xz`
   - TODO: Protect with authelia
 - [PGAdmin](https://www.pgadmin.org): Administration and development platform for PostgreSQL (Port 80)
   - https://pgadmin.flori-richter.de
-  - TODO: How to store the config for servers...
 - [Rallly](https://support.rallly.co/self-hosting/introduction): A tool for creating scheduling polls (Port 3000)
   - https://rallly.flori-richter.de
-  - TODO: Verify on x86 system...
+  - TODO: Connect with Authelia OIDC
 - [Authelia](https://www.authelia.com/): An authentication and authorization server and portal (Port 9091)
   - https://auth.flori-richter.de
 - [Umami](https://umami.is/docs): Simple, fast, privacy-focused analytics solution (Port 3000)
   - https://analytics.flori-richter.de
-  - TODO: Check if it works, protect with authelia
-- [MeTube](https://github.com/alexta69/metube): Web GUI for youtube-dl with playlist support (Port 8081)
-  - https://yt-dlp.flori-richter.de
-  - TODO: Check if it works, check how it is cleaned, protect with authelia
-
-<!-- TODO:
-- CI runner
-- [Invidious](https://invidious.io): Open source alternative front-end to YouTube (Port 3000)
-  - https://yt.flori-richter.de
-  - TODO: Stop crashes... -->
+  - Default credentials: admin / umami
 
 ### Local
 - [PostgreSQL](https://www.postgresql.org): A powerful, open source object-relational database system (Port 5432)
   - postgres://pg.flori-richter.de:5432 (only local connections)
   - Tune performance: https://bun.uptrace.dev/postgres/performance-tuning.html
-  - TODO: SSL, Backups and restore, tune performance 
+  - TODO: SSL
 - [pgBackRest](https://pgbackrest.org): Reliable PostgreSQL Backup & Restore
-  - TODO: Create initial setup and store config
 - [restic](https://restic.net): Restic is a modern backup program
-  - TODO: Create initial setup + Check resticprofile
+  - TODO: Logging
 - [fail2ban](https://www.fail2ban.org): Daemon to ban hosts that cause multiple authentication errors
   - Protect PSQL: https://serverfault.com/questions/627169/how-to-secure-an-open-postgresql-port
-  - TODO: Validate config, setup email notifications
 - [msmtp](https://wiki.debian.org/msmtp): An SMTP client that can be used to send mails
-  - TODO: Validate config
-- [aide](https://aide.github.io): A file and directory integrity checker
-  - TODO: Validate config
+- [logwatch](https://ubuntu.com/server/docs/how-to-install-and-configure-logwatch): Keeps an eye on your logs for you, flags items that may be of interest, and reports them via email
 
 ## My apps
 

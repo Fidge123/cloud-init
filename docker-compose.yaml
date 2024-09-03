@@ -47,16 +47,6 @@ services:
     env_file:
       - secrets/rallly.env
 
-  metube:
-    image: ghcr.io/alexta69/metube
-    restart: unless-stopped
-    # ports:
-    #   - "8081:8081"
-    environment:
-      - DELETE_FILE_ON_TRASHCAN=true
-    volumes:
-      - /path/to/downloads:/downloads
-
   # yt:
   #   image: quay.io/invidious/invidious:latest
   #   restart: unless-stopped
@@ -105,7 +95,7 @@ services:
     image: dpage/pgadmin4:latest
     restart: unless-stopped
     volumes:
-      - ./pgadmin:/pgadmin4/servers.json
+      - ./pgadmin:/var/lib/pgadmin
     # ports:
     #   - "80:80"
     env_file:

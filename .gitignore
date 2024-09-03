@@ -1,3 +1,4 @@
 *.env
 invidious.yml
 install_postgres.sh
+secrets/

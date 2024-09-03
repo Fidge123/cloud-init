@@ -35,8 +35,10 @@ $ sudo -u postgres pgbackrest --stanza=main --log-level-console=info check
 # Configure restic
 $ sudo su
 $ source secrets/restic.env 
-$ restic init
+$ restic init # if necessary
 $ restic restore latest
+$ restic backup --exclude=secrets/ --exclude=.git/ --exclude=.gitignore --exclude=cloud-config.yaml --exclude=docker-compose.yaml --exclude=secrets.tgz.gpg --exclude=README.md .
+$ exit
 
 # Run docker
 $ docker compose up -d
@@ -50,7 +52,6 @@ For debugging these logs are helpful:
 
 - Check NTP status: `sudo ntpq -p`
 - Check fail2ban status: `sudo fail2ban-client status`
-- Check AIDE: `sudo aide.wrapper --check` (accept changes `sudo aideinit -y -f`)
 - Check open ports: `sudo ss -lntup`
 - Check msmtp: `echo "hello, world!" | msmtp flori@hey.com`
 

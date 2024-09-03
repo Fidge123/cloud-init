@@ -23,8 +23,6 @@ services:
       - ./authelia:/config
     # expose:
     #   - 9091
-    env_file:
-      - secrets/authelia.env
 
   umami:
     image: ghcr.io/umami-software/umami:postgresql-latest

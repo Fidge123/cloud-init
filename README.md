@@ -23,7 +23,7 @@ $ gpg -d neko.tgz.gpg | tar xz
 
 # Configure restic
 $ sudo su
-$ source secrets/restic.env 
+$ source restic.env 
 $ restic init # if necessary
 $ restic restore latest
 $ restic backup --files-from restic-files.txt
@@ -50,6 +50,6 @@ For debugging these logs are helpful:
 
 ## Secrets
 
-Create secrets: `tar -cz neko/* | gpg -c -o neko.tgz.gpg`
+Create secrets: `tar -cz neko/ | gpg -c -o neko.tgz.gpg`
 
 Decrypt: `gpg -d neko.tgz.gpg | tar xz`

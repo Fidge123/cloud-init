@@ -112,10 +112,6 @@ write_files:
       Service = All
 
 runcmd:
-  # Configure .bashrc
-  - cp /etc/skel/.bashrc /home/flori/
-  - sed -i -e '$aeval "$(direnv hook bash)"' /home/flori/.bashrc
-  - chown -R flori:flori /home/flori/.bashrc
   # Configure email
   - cp /root/.msmtprc /home/flori/.msmtprc
   - chmod 0400 /home/flori/.msmtprc

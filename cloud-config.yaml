@@ -55,16 +55,6 @@ write_files:
           "max-size": "10m"
         }
       }
-  - path: /etc/logrotate.d/invidious.logrotate
-    content: |
-      /home/invidious/invidious/invidious.log {
-        rotate 4
-        weekly
-        notifempty
-        missingok
-        compress
-        minsize 1048576
-      }
   - path: /etc/apt/apt.config.d/51my-unattended-upgrades
     content: |
       Unattended-Upgrade::Allowed-Origins {

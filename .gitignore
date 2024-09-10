@@ -2,3 +2,5 @@
 invidious.yml
 install_postgres.sh
 secrets/
+neko/
+secrets.tgz.gpg

@@ -1,112 +1,36 @@
-services:
-  npm:
-    image: jc21/nginx-proxy-manager:latest
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "81:81"
-      - "443:443"
-    volumes:
-      - ./npm/data:/data
-      - ./npm/letsencrypt:/etc/letsencrypt
-    labels:
-      - "com.centurylinklabs.watchtower.monitor-only=true"
-    healthcheck:
-      test: ["CMD", "/usr/bin/check-health"]
-      interval: 30s
-      timeout: 3s
-
-  authelia:
-    image: authelia/authelia
-    restart: unless-stopped
-    volumes:
-      - ./authelia:/config
-    # expose:
-    #   - 9091
-
-  umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
-    restart: unless-stopped
-    # ports:
-    #   - "3000:3000"
-    env_file:
-      - secrets/umami.env
-    healthcheck:
-      test: ["CMD-SHELL", "curl http://localhost:3000/api/heartbeat"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  rallly:
-    image: lukevella/rallly:latest
-    restart: unless-stopped
-    # ports:
-    #   - 3000:3000
-    env_file:
-      - secrets/rallly.env
-
-  # yt:
-  #   image: quay.io/invidious/invidious:latest
-  #   restart: unless-stopped
-  #   ports:
-  #     - "127.0.0.1:3000:3000"
-  #   volumes:
-  #     - ./invidious:/config
-  #   environment:
-  #     - INVIDIOUS_CONFIG_FILE=config/invidious.yml
-  #   healthcheck:
-  #     test: wget -nv --tries=1 --spider http://127.0.0.1:3000/api/v1/trending || exit 1
-  #     interval: 30s
-  #     timeout: 5s
-  #     retries: 2
-  #   logging:
-  #     options:
-  #       max-size: "100M"
-  #       max-file: "4"
-
-  pdf:
-    image: frooodle/s-pdf:latest-ultra-lite
-    restart: unless-stopped
-    # ports:
-    #   - '8080:8080'
-    volumes:
-      - ./pdf/trainingData:/usr/share/tessdata
-      - ./pdf/extraConfigs:/configs
-    env_file:
-      - secrets/stirling.env
-
-  miniflux:
-    image: miniflux/miniflux:latest
-    restart: unless-stopped
-    # ports:
-    #   - "8080:8080"
-    env_file:
-      - secrets/miniflux.env
-
-  tools:
-    image: corentinth/it-tools:latest
-    restart: unless-stopped
-    # ports:
-    #   - 80:80
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    restart: unless-stopped
-    volumes:
-      - ./pgadmin:/var/lib/pgadmin
-    # ports:
-    #   - "80:80"
-    env_file:
-      - secrets/pgadmin.env
-
-  watchtower:
-    image: containrrr/watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    env_file:
-      - secrets/watchtower.env
+version: "3.5"
 
 networks:
   default:
-    external: true
-    name: net
+    attachable: true
+    name: "traefik"
+
+services:
+  traefik:
+    image: "traefik:v3.1"
+    command: --providers.docker
+    restart: "unless-stopped"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./acme.json:/acme.json"
+      - "./config:/config"
+
+  neko-rooms:
+    image: "m1k1o/neko:firefox"
+    restart: "unless-stopped"
+    shm_size: "8gb"
+    env_file:
+      - ".env"
+    ports:
+      - "8080:8080"
+      - "52000-52100:52000-52100/udp"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.neko-frontend.loadbalancer.server.port=8080"
+      - "traefik.http.routers.neko.rule=Host(`serienabend.duckdns.org`)"
+      - "traefik.http.routers.neko.entrypoints=websecure"
+      - "traefik.http.routers.neko.tls.certresolver=lets-encrypt"

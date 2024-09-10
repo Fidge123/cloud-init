@@ -94,7 +94,7 @@ Decrypt: `gpg -d secrets.tgz.gpg | tar xz`
   - TODO: SSL
 - [pgBackRest](https://pgbackrest.org): Reliable PostgreSQL Backup & Restore
 - [restic](https://restic.net): Restic is a modern backup program
-  - TODO: Logging
+  - TODO: Logging, scheduled backup
 - [fail2ban](https://www.fail2ban.org): Daemon to ban hosts that cause multiple authentication errors
   - Protect PSQL: https://serverfault.com/questions/627169/how-to-secure-an-open-postgresql-port
 - [msmtp](https://wiki.debian.org/msmtp): An SMTP client that can be used to send mails

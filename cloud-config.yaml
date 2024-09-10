@@ -29,9 +29,7 @@ bootcmd:
 packages:
   - ufw
   - ntp
-  - python3-pip
   - git
-  - direnv
   - logrotate
   - restic
   - logwatch
@@ -88,20 +86,6 @@ write_files:
 
       # Set a default account
       account default: smtp2go
-  - path: /etc/fail2ban/filter.d/local-postgresql.conf
-    content: |
-      [Definition]
-      failregex = <HOST>\(\d+\) FATAL:  password authentication failed for .+$
-                  <HOST>\(\d+\) FATAL:  no pg_hba.conf entry for host .+$
-      ignoreregex = duration:
-  - path: /etc/fail2ban/jail.d/local-postgresql.conf
-    content: |
-      [local-postgresql]
-      enabled  = true
-      filter   = local-postgresql
-      action   = iptables[name=PostgreSQL, port=5432, protocol=tcp]
-      logpath  = /var/log/postgresql/postgresql*.log
-      maxretry = 3
   - path: /etc/fail2ban/jail.local
     content: |
       [DEFAULT]
@@ -150,7 +134,6 @@ runcmd:
   - sed -i -e '/^\(#\|\)PrintLastLog/s/^.*$/PrintLastLog no/' /etc/ssh/sshd_config
   - sed -i -e '$aAllowUsers flori' /etc/ssh/sshd_config
   - ufw allow 4444/tcp
-  - ufw allow 5432/tcp
   - ufw enable
   # Configure logwatch, fail2ban, unattended-upgrades & Docker
   - mkdir /var/cache/logwatch

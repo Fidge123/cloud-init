@@ -9,7 +9,7 @@ Create new server in Hetzner Cloud Console with cloud-init config.
 $ TODO: Use hcloud to automate new server creation on hetzner.
 
 # Connect via ssh
-$ ssh -6 flori@serienabend.duckdns.org -p 4444
+$ ssh flori@serienabend.duckdns.org -p 4444
 
 # Create logwatch cache folder
 $ sudo mkdir -p /var/cache/logwatch
@@ -20,6 +20,9 @@ $ cd cloud-init
 
 # Decrypt secrets using key in password manager
 $ gpg -d neko.tgz.gpg | tar xz
+$ rm neko/._*
+$ mv neko/{.,}* .
+$ rmdir neko
 
 # Configure restic
 $ sudo su
@@ -50,6 +53,6 @@ For debugging these logs are helpful:
 
 ## Secrets
 
-Create secrets: `tar -cz neko/ | gpg -c -o neko.tgz.gpg`
+Create secrets: `tar -cz neko/{.,}* | gpg -c -o neko.tgz.gpg`
 
 Decrypt: `gpg -d neko.tgz.gpg | tar xz`

@@ -32,9 +32,13 @@ $ restic restore latest
 $ restic backup --files-from restic-files.txt
 
 # Set mail PW (extra space is intentional)
-$  sudo sed -i -e 's/SMTP_PW/$SMTP2GO/g' /root/.msmtprc
-$  sudo sed -i -e 's/SMTP_PW/$SMTP2GO/g' /home/flori/.msmtprc
+$  sudo sed -i -e "s/SMTP_PW/$SMTP2GO/g" /root/.msmtprc
+$  sudo sed -i -e "s/SMTP_PW/$SMTP2GO/g" /home/flori/.msmtprc
 $ exit
+
+# Create acme.json if necessary
+$ touch acme.json
+$ sudo chmod 600 acme.json
 
 # Run docker
 $ docker compose up -d
